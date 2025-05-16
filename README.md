@@ -10,6 +10,10 @@ This project is a local voice agent that:
 - Generates natural language answers with a local Llama model (Hugging Face)
 - Speaks the answer back to you using **pyttsx3** (local TTS)
 
+**Want even better accuracy or more natural voices?**
+
+- You can optionally use cloud AI services like **AssemblyAI** (for speech-to-text), **Cartesia** (for TTS), or **OpenAI** (for LLMs) by uncommenting and configuring the relevant code and settings in this project.
+
 ## Features
 
 - **Wake word detection** ("Hey Jarvis")
@@ -89,6 +93,9 @@ This project is designed to be easily extended to fit your needs:
 - Add more advanced **search, summarization, or Q&A** features.
 - Integrate with other local or cloud LLMs, TTS, or STT engines.
 - Build a web or mobile UI for remote access.
+- **Use cloud AI services:**
+  - Swap in [**AssemblyAI**](https://www.assemblyai.com/) for speech-to-text, [**Cartesia**](https://cartesia.ai/) for TTS (including the ability to [clone your own voice](https://cartesia.ai/)), or [**OpenAI**](https://platform.openai.com/) for LLMs for improved accuracy and naturalness.
+  - See the commented configuration/code for AssemblyAI and Cartesia in `main.py` for easy switching.
 
 See the [LlamaIndex documentation](https://docs.llamaindex.ai/en/stable/) for more on supported file types and advanced features.
 
