@@ -1,0 +1,33 @@
+# Python virtual environment
+venv/
+
+# Model files and large data
+*.safetensors
+*.gguf
+*.pth
+*.bin
+models/
+environment_index/
+
+# Jupyter and Python cache
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+*.pyo
+
+# OS filesn
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+
+# VSCode and IDE settings
+.vscode/
+.idea/
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault

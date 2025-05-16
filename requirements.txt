@@ -1,0 +1,12 @@
+sounddevice
+numpy
+requests
+scipy
+llama-index
+transformers
+huggingface_hub
+torch
+llama-index-embeddings-huggingface
+python-dotenv
+openai-whisper
+pyttsx3
