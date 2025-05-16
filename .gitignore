@@ -1,5 +1,6 @@
 # Python virtual environment
 venv/
+.venv/
 
 # Model files and large data
 *.safetensors

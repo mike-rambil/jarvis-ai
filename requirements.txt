@@ -5,8 +5,9 @@ scipy
 llama-index
 transformers
 huggingface_hub
-torch
+torch==2.5.1
 llama-index-embeddings-huggingface
 python-dotenv
 openai-whisper
-pyttsx3
+bark
+simpleaudio
