@@ -1,6 +1,7 @@
 # Python virtual environment
 venv/
 .venv/
+tts_*.mp3
 
 # Model files and large data
 *.safetensors

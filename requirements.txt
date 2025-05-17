@@ -9,4 +9,4 @@ torch
 llama-index-embeddings-huggingface
 python-dotenv
 openai-whisper
-simpleaudio
+elevenlabs

@@ -11,7 +11,9 @@ import requests
 # (Assume llama_index is installed and docs are indexed)
 # Cartesia (Assume API usage via requests)
 import whisper
-import simpleaudio as sa
+from scipy.io.wavfile import write as write_wav
+from elevenlabs.client import ElevenLabs
+from elevenlabs import play
 
 # LlamaIndex imports
 from llama_index.core import  StorageContext, load_index_from_storage
@@ -44,11 +46,16 @@ def record_audio(duration=5, fs=16000):
 # --- ASSEMBLYAI TRANSCRIPTION ---
 def transcribe_audio(audio_data, fs):
     import scipy.io.wavfile
+    import os
     temp_wav = 'temp.wav'
     scipy.io.wavfile.write(temp_wav, fs, audio_data)
-    model = whisper.load_model('base')
-    result = model.transcribe(temp_wav)
-    return result['text']
+    try:
+        model = whisper.load_model('base')
+        result = model.transcribe(temp_wav)
+        return result['text']
+    finally:
+        if os.path.exists(temp_wav):
+            os.remove(temp_wav)
 
 # --- LLAMAINDEX QUERY ---
 def load_llamaindex():
@@ -68,60 +75,69 @@ def speak_with_elevenlabs(text):
     if not ELEVENLABS_API_KEY or not ELEVENLABS_VOICE_ID:
         print("ElevenLabs API key or voice ID not set in environment variables.")
         return
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
-    headers = {
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "text": text,
-        "voice_settings": {
-            "stability": 0.64,
-            "similarity_boost": 0.95,
-            "style_exaggeration": 0.5
-        }
-    }
-    response = requests.post(url, headers=headers, json=payload)
-    if response.status_code == 200:
-        audio_data = response.content
-        output_wav = "elevenlabs_tts.wav"
-        with open(output_wav, "wb") as f:
-            f.write(audio_data)
-        try:
-            wave_obj = sa.WaveObject.from_wave_file(output_wav)
-            play_obj = wave_obj.play()
-            play_obj.wait_done()
-        except Exception as e:
-            print(f"Error playing audio: {e}")
-    else:
-        print(f"Error from ElevenLabs API: {response.status_code} - {response.text}")
+    client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+    audio = client.text_to_speech.convert(
+        text=text,
+        voice_id=ELEVENLABS_VOICE_ID,
+        model_id="eleven_turbo_v2_5",
+        output_format="mp3_44100_128"
+    )
+    audio_bytes = b"".join(chunk for chunk in audio if isinstance(chunk, (bytes, bytearray)))
+    # Save audio to file with timestamp
+    timestamp = int(time.time())
+    output_file = f"tts_{timestamp}.mp3"
+    with open(output_file, "wb") as f:
+        f.write(audio_bytes)
+    print(f"Audio saved to {output_file}")
+    try:
+        play(audio_bytes)
+    except Exception as e:
+        print(f"Error playing audio: {e}")
 
 # --- MAIN LOOP ---
 def main():
+    # Check if index exists, if not, build it
+    index_file = os.path.join(INDEX_DIR, 'docstore.json')
+    if not os.path.exists(index_file):
+        print(f"Index file {index_file} not found. Building index...")
+        import index_pdf  # This will run the indexing code
     print("Loading LlamaIndex...")
     index = load_llamaindex()
     print("Loading Hugging Face Llama generator...")
     generator = load_llama_1b_instruct()
     print("Ready for wake word detection.")
-    while True:
-        print("[Listening for wake word: 'Hey Jarvis']")
-        audio, fs = record_audio(duration=3)
-        transcript = transcribe_audio(audio, fs)
-        print(f"[Wake word transcript]: {transcript}")
-        if "hey jarvis" in transcript.lower():
-            print("Wake word detected! Listening for command...")
-            audio, fs = record_audio(duration=5)
-            command = transcribe_audio(audio, fs)
-            print(f"[User command]: {command}")
-            context = query_llamaindex(index, command)
-            print(f"LlamaIndex context: {context}")
-            answer = ask_llama(command, context=context, generator=generator)
-            print(f"Model answer: {answer}")
-            speak_with_elevenlabs(answer)
-            print("---")
-        else:
-            print("Wake word not detected. Continuing to listen...")
-        time.sleep(1)
+    try:
+        while True:
+            print("[Listening for wake word: 'Hey Jarvis']")
+            audio, fs = record_audio(duration=3)
+            transcript = transcribe_audio(audio, fs)
+            print(f"[Wake word transcrip ‼️👀]: {transcript}")
+            if "hey jarvis" in transcript.lower():
+                print("Wake word detected! Listening for command...")
+                audio, fs = record_audio(duration=5)
+                command = transcribe_audio(audio, fs)
+                print(f"[User command]: {command}")
+                context = query_llamaindex(index, command)
+                print(f"LlamaIndex context: {context}")
+                answer = ask_llama(
+                    "You are a helpful AI assistant. Respond conversationally and politely.\n\n" + context + "\n\nUser: " + command + "\nAssistant:",
+                    generator=generator
+                )
+                # Only echo the lines that the assistant speaks
+                if "Assistant:" in answer:
+                    assistant_reply = answer.split("Assistant:")[-1].strip()
+                else:
+                    assistant_reply = answer.strip()
+                # Remove any '<|assistant|>' tokens
+                assistant_reply = assistant_reply.replace('<|assistant|>', '').strip()
+                print(f"AI🔥: {assistant_reply}")
+                speak_with_elevenlabs(assistant_reply)
+                print("---")
+            else:
+                print("Wake word not detected. Continuing to listen...")
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nExiting gracefully. Goodbye!")
 
 if __name__ == '__main__':
     # Set the local embedding model
