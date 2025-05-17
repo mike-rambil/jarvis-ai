@@ -11,7 +11,7 @@ import requests
 # (Assume llama_index is installed and docs are indexed)
 # Cartesia (Assume API usage via requests)
 import whisper
-import pyttsx3
+import simpleaudio as sa
 
 # LlamaIndex imports
 from llama_index.core import  StorageContext, load_index_from_storage
@@ -23,8 +23,8 @@ from llama_index.core.settings import Settings
 DOCS_PATH = 'docs/'  # Directory containing your documents
 INDEX_DIR = 'environment_index'  # Directory containing your prebuilt index
 
-ASSEMBLYAI_API_KEY = os.getenv('ASSEMBLYAI_API_KEY', 'your-assemblyai-key')
-CARTESIA_API_KEY = os.getenv('CARTESIA_API_KEY', 'your-cartesia-key')
+ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY')
+ELEVENLABS_VOICE_ID = os.getenv('ELEVENLABS_VOICE_ID')
 
 # Cartesia AI parameters
 # CARTESIA_MODEL_ID = os.getenv('CARTESIA_MODEL_ID', 'sonic-2')
@@ -63,15 +63,38 @@ def query_llamaindex(index, question):
     response = query_engine.query(question)
     return str(response)
 
-# --- CARTESIA SPEECH SYNTHESIS ---
-def speak_with_cartesia(text):
-    # Use pyttsx3 for local speech synthesis
-    try:
-        engine = pyttsx3.init()
-        engine.say(text)
-        engine.runAndWait()
-    except Exception as e:
-        print(f"Error with pyttsx3 TTS: {e}")
+# --- ELEVENLABS SPEECH SYNTHESIS ---
+def speak_with_elevenlabs(text):
+    if not ELEVENLABS_API_KEY or not ELEVENLABS_VOICE_ID:
+        print("ElevenLabs API key or voice ID not set in environment variables.")
+        return
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+    headers = {
+        "xi-api-key": ELEVENLABS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "text": text,
+        "voice_settings": {
+            "stability": 0.64,
+            "similarity_boost": 0.95,
+            "style_exaggeration": 0.5
+        }
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code == 200:
+        audio_data = response.content
+        output_wav = "elevenlabs_tts.wav"
+        with open(output_wav, "wb") as f:
+            f.write(audio_data)
+        try:
+            wave_obj = sa.WaveObject.from_wave_file(output_wav)
+            play_obj = wave_obj.play()
+            play_obj.wait_done()
+        except Exception as e:
+            print(f"Error playing audio: {e}")
+    else:
+        print(f"Error from ElevenLabs API: {response.status_code} - {response.text}")
 
 # --- MAIN LOOP ---
 def main():
@@ -94,7 +117,7 @@ def main():
             print(f"LlamaIndex context: {context}")
             answer = ask_llama(command, context=context, generator=generator)
             print(f"Model answer: {answer}")
-            speak_with_cartesia(answer)
+            speak_with_elevenlabs(answer)
             print("---")
         else:
             print("Wake word not detected. Continuing to listen...")
