@@ -1,4 +1,4 @@
-# Jarvis: Local Voice Agent with LlamaIndex, Whisper, and pyttsx3
+# Jarvis: Local Voice Agent with LlamaIndex, Whisper, and ElevenLabs TTS
 
 ## Overview
 
@@ -8,7 +8,7 @@ This project is a local voice agent that:
 - Transcribes your speech to text **locally** using OpenAI Whisper
 - Retrieves context and answers from your own PDF documents using LlamaIndex
 - Generates natural language answers with a local Llama model (Hugging Face)
-- Speaks the answer back to you using **pyttsx3** (local TTS)
+- Speaks the answer back to you using **ElevenLabs TTS** (cloud API)
 
 **Want even better accuracy or more natural voices?**
 
@@ -19,7 +19,10 @@ This project is a local voice agent that:
 - **Wake word detection** ("Hey Jarvis")
 - **Offline document Q&A** (index your own PDFs)
 - **Local LLM support** (no OpenAI API required)
-- **Local real-time speech-to-text and text-to-speech**
+- **Local real-time speech-to-text**
+- **Cloud TTS with ElevenLabs**
+- **All AI-generated audio files are saved in the `ai-content/` folder**
+- **Cleanup prompt:** On exit, you can choose to delete all AI-generated audio files
 
 ## Setup
 
@@ -37,10 +40,16 @@ This project is a local voice agent that:
    pip install -r requirements.txt
    ```
 
-4. **(Optional) Configure TTS parameters:**
+4. **Configure ElevenLabs API:**
 
-   - By default, pyttsx3 uses your system's built-in voices.
-   - You can change the voice or rate in `main.py` if you want a different sound.
+   - Create a `.env` file in the project root with:
+
+     ```
+     ELEVENLABS_API_KEY=your_elevenlabs_api_key
+     ELEVENLABS_VOICE_ID=your_elevenlabs_voice_id
+     ```
+
+   - You can find your API key and voice ID in your ElevenLabs dashboard.
 
 5. **Prepare your document:**
    - Place exactly one PDF file in the `docs/` folder. (Only one PDF is supported at a time.)
@@ -65,12 +74,15 @@ python main.py
 
 - The agent will listen for "Hey Jarvis".
 - After the wake word, speak your command/question.
-- The agent will answer using your PDF and speak the response.
+- The agent will answer using your PDF and speak the response using ElevenLabs.
+- **All generated audio files are saved in the `ai-content/` folder as `tts_<timestamp>.mp3`.**
+- **On exit (Ctrl+C), if there are files in `ai-content/`, you will be prompted to delete them.**
 
 ## Model Downloads
 
 - The first time you run, Whisper and Hugging Face models will be downloaded automatically.
-- All models run locally for speech-to-text and text-to-speech (no API key required).
+- All models run locally for speech-to-text and LLM (no OpenAI API required for LLM or STT).
+- ElevenLabs TTS requires an internet connection and API key.
 - You may need to log in to Hugging Face for gated models.
 
 ## Next Level: Global Voice Agent with LiveKit
