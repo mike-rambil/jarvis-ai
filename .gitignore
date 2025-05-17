@@ -2,6 +2,7 @@
 venv/
 .venv/
 tts_*.mp3
+ai-content/
 
 # Model files and large data
 *.safetensors
